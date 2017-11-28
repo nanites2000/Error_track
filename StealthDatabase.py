@@ -65,8 +65,9 @@ def submit(*args):
     model= blenderModel.get()
     detail = '"asg"'''
     errorCode = errors[errorList.curselection()[0]].strip()
-    sql_command = "INSERT INTO stealthErrors (dates,times,blenderModel,errorCode,errorDetail,note) VALUES (%s, %s, '%s', '%s', '%s', 'the screw broke');" % (
-    dates, times, model,errorCode, detail)
+    noteString= noteEntry.get()
+    sql_command = "INSERT INTO stealthErrors (dates,times,blenderModel,errorCode,errorDetail,note) VALUES (%s, %s, '%s', '%s', '%s', '%s');" % (
+    dates, times, model,errorCode, detail,noteString)
     cursor.execute(sql_command)
 
     #cursor.execute("SELECT * FROM stealthErrors")
@@ -102,6 +103,7 @@ mainframe.rowconfigure(0, weight=1)
 
 blenderModel = StringVar()
 meters = StringVar()
+noteText = StringVar()
 
 #model frame
 modelFrame = ttk.Frame(mainframe)
@@ -138,7 +140,7 @@ errorList.config(font=("Courier", 30))
 noteFrame = ttk.Frame(root)
 noteFrame.grid(column=0, row= 1, columnspan = 30)
 ttk.Label(noteFrame, text="Note:").grid(column=0, row=0,sticky =E)
-noteEntry = ttk.Entry(noteFrame, width=250, textvariable=blenderModel)
+noteEntry = ttk.Entry(noteFrame, width=250, textvariable=noteText)
 noteEntry.grid(column=1, columnspan = 30, row = 0)
 
 
