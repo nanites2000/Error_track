@@ -7,6 +7,7 @@ import string
 
 
 global errors
+global models
 
 
 
@@ -53,6 +54,12 @@ def setErrorListbox():
     #l.bind('<<ListboxSelect>>', profileSelected)
 
 
+def setModelListbox():
+    global models
+    models = getOptions("models.txt")
+    modelStrings = StringVar(value=models)
+    modelList["listvariable"] = modelStrings #this line actually changes the GUI
+
 
 
 #this will actually submit the changes to  the sql database
@@ -62,8 +69,8 @@ def submit(*args):
     # sql_command = """INSERT INTO employee (staff_number, fname, lname, gender, birth_date)
     #    VALUES (NULL, "William", "Shakespeare", "m", "1961-10-25");"""
     # cursor.execute(sql_command)
-    model= blenderModel.get()
-    detail = '"asg"'''
+    model= models[modelList.curselection()[0]].strip()
+    detail = ''
     errorCode = errors[errorList.curselection()[0]].strip()
     noteString= noteEntry.get()
     sql_command = "INSERT INTO stealthErrors (dates,times,blenderModel,errorCode,errorDetail,note) VALUES (%s, %s, '%s', '%s', '%s', '%s');" % (
@@ -108,9 +115,20 @@ noteText = StringVar()
 #model frame
 modelFrame = ttk.Frame(mainframe)
 modelFrame.grid(column=0, row= 1)
-ttk.Label(modelFrame, text="Blender Model:").grid(column=0, row=1)
-blenderModelEntry = ttk.Entry(modelFrame, width=7, textvariable=blenderModel)
-blenderModelEntry.grid(column=1, row=1, sticky=(E))
+modelLabel = ttk.Label(modelFrame, text="Model:")
+modelLabel.grid(column=0, row=0)
+modelLabel.config(font=("Courier", 30))
+
+modelList=Listbox(modelFrame,height=15, width=10,exportselection=0)
+modelList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
+scrollModel = ttk.Scrollbar( root, orient=VERTICAL, command=modelList.yview)
+scrollModel.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
+#root.grid_columnconfigure(0, weight=1)
+#root.grid_columnconfigure(1, weight=1)
+modelList.configure(yscrollcommand=scrollModel.set)
+modelList.config(font=("Courier", 30))
+#root.columnconfigure(0,)
+
 
 
 #error Frame
@@ -122,7 +140,7 @@ errorLabel.config(font=("Courier", 30))
 
 
 
-errorList=Listbox(errorFrame,height=15, width=30)
+errorList=Listbox(errorFrame,height=15, width=30,exportselection=0)
 errorList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
 s = ttk.Scrollbar( root, orient=VERTICAL, command=errorList.yview)
 s.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
@@ -139,10 +157,12 @@ errorList.config(font=("Courier", 30))
 #note frame
 noteFrame = ttk.Frame(root)
 noteFrame.grid(column=0, row= 1, columnspan = 30)
-ttk.Label(noteFrame, text="Note:").grid(column=0, row=0,sticky =E)
+noteLabel = ttk.Label(noteFrame, text="Note:")
+noteLabel.grid(column=0, row=0,sticky =E)
+noteLabel.config(font=("Courier", 22))
 noteEntry = ttk.Entry(noteFrame, width=250, textvariable=noteText)
 noteEntry.grid(column=1, columnspan = 30, row = 0)
-
+noteEntry.config(font=("Courier", 22))
 
 
 
@@ -158,7 +178,7 @@ submitButton.config(bg=("light blue"))
 
 
 for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
-
+setModelListbox()
 setErrorListbox()
 #feet_entry.focus()
 root.bind('<Return>', submit)
