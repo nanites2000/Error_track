@@ -6,6 +6,7 @@ from tkinter import ttk
 import string
 
 
+global errors
 
 
 
@@ -35,6 +36,22 @@ note VARCHAR(600)
 );"""
 cursor.execute(sql_command)
 
+def getOptions(file):
+    filename = "configuration\\" + file
+    print(filename)
+    with open (filename) as f:
+        result = f.readlines()
+
+    return(result)
+
+def setErrorListbox():
+    global errors
+    errors = getOptions("errors.txt")
+    errorStrings = StringVar(value=errors)
+    errorList["listvariable"] = errorStrings
+
+    #l.bind('<<ListboxSelect>>', profileSelected)
+
 
 
 
@@ -47,8 +64,9 @@ def submit(*args):
     # cursor.execute(sql_command)
     model= blenderModel.get()
     detail = '"asg"'''
-    sql_command = "INSERT INTO stealthErrors (dates,times,blenderModel,errorCode,errorDetail,note) VALUES (%s, %s, '%s', 'ctap', '%s', 'the screw broke');" % (
-    dates, times, model, detail)
+    errorCode = errors[errorList.curselection()[0]].strip()
+    sql_command = "INSERT INTO stealthErrors (dates,times,blenderModel,errorCode,errorDetail,note) VALUES (%s, %s, '%s', '%s', '%s', 'the screw broke');" % (
+    dates, times, model,errorCode, detail)
     cursor.execute(sql_command)
 
     #cursor.execute("SELECT * FROM stealthErrors")
@@ -75,9 +93,9 @@ def submit(*args):
 
 root = Tk()
 root.title("Enter Errors")
-root.geometry("1360x750")
+root.geometry("1660x1000")
 
-mainframe = ttk.Frame(root, padding="3 3 12 12")
+mainframe = ttk.Frame(root, padding="15 15 15 15")
 mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
 mainframe.columnconfigure(0, weight=1)
 mainframe.rowconfigure(0, weight=1)
@@ -85,28 +103,61 @@ mainframe.rowconfigure(0, weight=1)
 blenderModel = StringVar()
 meters = StringVar()
 
+#model frame
 modelFrame = ttk.Frame(mainframe)
-modelFrame.grid(column=3, row= 1)
-ttk.Label(modelFrame, text="Blender Model:").grid(column=0, row=1, sticky=W)
+modelFrame.grid(column=0, row= 1)
+ttk.Label(modelFrame, text="Blender Model:").grid(column=0, row=1)
 blenderModelEntry = ttk.Entry(modelFrame, width=7, textvariable=blenderModel)
-blenderModelEntry.grid(column=1, row=1, sticky=(W))
-
-noteFrame = ttk.Frame(mainframe)
-noteFrame.grid(column=3, row= 2)
-ttk.Label(modelFrame, text="Blender Model:").grid(column=0, row=1, sticky=W)
-blenderModelEntry = ttk.Entry(modelFrame, width=7, textvariable=blenderModel)
-blenderModelEntry.grid(column=1, row=1, sticky=(W))
+blenderModelEntry.grid(column=1, row=1, sticky=(E))
 
 
-ttk.Label(mainframe, textvariable=meters).grid(column=2, row=2, sticky=(W, E))
-ttk.Button(mainframe, text="Submit", command=submit).grid(column=3, row=3, sticky=W)
+#error Frame
+errorFrame = ttk.Frame(mainframe)
+errorFrame.grid(column=1, row= 1)
+errorLabel = ttk.Label(errorFrame, text="Error:")
+errorLabel.grid(column=0, row=0)
+errorLabel.config(font=("Courier", 30))
 
 
-ttk.Label(mainframe, text="is equivalent to").grid(column=1, row=2, sticky=E)
-ttk.Label(mainframe, text="meters").grid(column=3, row=2, sticky=W)
+
+errorList=Listbox(errorFrame,height=15, width=30)
+errorList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
+s = ttk.Scrollbar( root, orient=VERTICAL, command=errorList.yview)
+s.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
+#root.grid_columnconfigure(0, weight=1)
+#root.grid_columnconfigure(1, weight=1)
+errorList.configure(yscrollcommand=s.set)
+errorList.config(font=("Courier", 30))
+#root.columnconfigure(0,)
+
+
+
+
+
+#note frame
+noteFrame = ttk.Frame(root)
+noteFrame.grid(column=0, row= 1, columnspan = 30)
+ttk.Label(noteFrame, text="Note:").grid(column=0, row=0,sticky =E)
+noteEntry = ttk.Entry(noteFrame, width=250, textvariable=blenderModel)
+noteEntry.grid(column=1, columnspan = 30, row = 0)
+
+
+
+
+
+
+
+submitButton = Button(root, text="Submit", command=submit)
+submitButton.grid(column=1, row=5, sticky=W)
+submitButton.config(font=("Courier", 30))
+submitButton.config(bg=("light blue"))
+
+
+
 
 for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
 
+setErrorListbox()
 #feet_entry.focus()
 root.bind('<Return>', submit)
 
