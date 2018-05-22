@@ -34,7 +34,6 @@ CREATE TABLE  IF NOT EXISTS stealthErrors (
 RowID INTEGER PRIMARY KEY , 
 Date DATE,
 StartTime TIME,
-EndTime TIME,
 Duration REAL,
 InitialProblem TEXT,
 FinalFix TEXT, 
@@ -82,36 +81,40 @@ def setFinalFixListbox():
 
 #this will actually submit the changes to  the sql database
 def submit(*args):
-
+    global initial
+    global finalFix
+    global startTime
 
     # sql_command = """INSERT INTO employee (staff_number, fname, lname, gender, birth_date)
     #    VALUES (NULL, "William", "Shakespeare", "m", "1961-10-25");"""
     # cursor.execute(sql_command)
-    initial= initial[initialList.curselection()[0]].strip()
-    detail = ''
-    finalFixCode = finalFix[finalFixList.curselection()[0]].strip()
-    noteString= noteEntry.get()
-    sql_command = "INSERT INTO stealthErrors (dates,times,blenderInitial,finalFix,finalFixDetail,note) VALUES (%s, %s, '%s', '%s', '%s', '%s');" % (
-    dates, times, initial,finalFixCode, detail,noteString)
-    cursor.execute(sql_command)
+    print(initialList.curselection()[0])
+    initialValue= initial[initialList.curselection()[0]].strip()
 
-    #cursor.execute("SELECT * FROM stealthErrors")
-    #print("\nfetch one:")
-    #res = cursor.fetchone()
-   # print(res)
+    finalFixValue = finalFix[finalFixList.curselection()[0]].strip()
 
-    cursor.execute("SELECT * FROM stealthErrors")
-    print("fetchall:")
-    result = cursor.fetchall()
-    for r in result:
-        print(r)
+    if initial and finalFixValue:
+        noteString= noteEntry.get()
+        print(str(datetime.date)+ str(time.time()-startTime)+ str(initialValue)+str(finalFixValue)+str( noteString))
+        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES (%s, %s, '%s', '%s', '%s');" % (
+        datetime.today().strftime(), time.time()-startTime, initialValue,finalFixValue, noteString)
+        cursor.execute(sql_command)
+
+        #cursor.execute("SELECT * FROM stealthErrors")
+        #print("\nfetch one:")
+        #res = cursor.fetchone()
+       # print(res)
+
+        cursor.execute("SELECT * FROM stealthErrors")
+        print("fetchall:")
+        result = cursor.fetchall()
+        for r in result:
+            print(r)
+
+        # never forget this, if you want the changes to be saved:
+        connection.commit()
 
 
-
-    # never forget this, if you want the changes to be saved:
-    connection.commit()
-
-    #
 
 
 
