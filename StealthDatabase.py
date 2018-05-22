@@ -11,8 +11,8 @@ global models
 
 
 
-times = datetime.now().strftime("\'%T:%f\'")
-dates= time.strftime("'%F'")
+#times = datetime.now().strftime("\'%T:%f\'")
+#dates= time.strftime("'%F'")
 
 
 connection = sqlite3.connect("company.db")
@@ -27,13 +27,14 @@ cursor = connection.cursor()
 #this creates the table if it doesn't already exist.
 sql_command = """
 CREATE TABLE  IF NOT EXISTS stealthErrors ( 
-errorID INTEGER PRIMARY KEY , 
-dates DATE,
-times TIME,
-blenderModel VARCHAR(50), 
-errorCode VARCHAR(100) , 
-errorDetail VARCHAR(300),
-note VARCHAR(600)
+RowID INTEGER PRIMARY KEY , 
+Date DATE,
+StartTime TIME,
+EndTime TIME,
+Duration REAL,
+InitialProblem TEXT,
+FinalFix TEXT, 
+Note TEXT
 );"""
 cursor.execute(sql_command)
 
@@ -45,22 +46,22 @@ def getOptions(file):
 
     return(result)
 
-def setErrorListbox():
-    global errors
-    errors = getOptions("errors.txt")
-    errorStrings = StringVar(value=errors)
-    errorList["listvariable"] = errorStrings
 
-    #l.bind('<<ListboxSelect>>', profileSelected)
 
 
 def setModelListbox():
     global models
-    models = getOptions("models.txt")
+    models = getOptions("InitialProblem.txt")
     modelStrings = StringVar(value=models)
     modelList["listvariable"] = modelStrings #this line actually changes the GUI
 
+def setErrorListbox():
+    global errors
+    errors = getOptions("FinalFix.txt")
+    errorStrings = StringVar(value=errors)
+    errorList["listvariable"] = errorStrings
 
+    #l.bind('<<ListboxSelect>>', profileSelected)
 
 #this will actually submit the changes to  the sql database
 def submit(*args):
@@ -115,18 +116,18 @@ noteText = StringVar()
 #model frame
 modelFrame = ttk.Frame(mainframe)
 modelFrame.grid(column=0, row= 1)
-modelLabel = ttk.Label(modelFrame, text="Model:")
+modelLabel = ttk.Label(modelFrame, text="Initial Problem:")
 modelLabel.grid(column=0, row=0)
 modelLabel.config(font=("Courier", 30))
 
-modelList=Listbox(modelFrame,height=15, width=10,exportselection=0)
+modelList=Listbox(modelFrame,height=21, width=45,exportselection=0)
 modelList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
-scrollModel = ttk.Scrollbar( root, orient=VERTICAL, command=modelList.yview)
+scrollModel = ttk.Scrollbar(modelFrame, orient=VERTICAL, command=modelList.yview)
 scrollModel.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
 #root.grid_columnconfigure(0, weight=1)
 #root.grid_columnconfigure(1, weight=1)
 modelList.configure(yscrollcommand=scrollModel.set)
-modelList.config(font=("Courier", 30))
+modelList.config(font=("Courier", 20))
 #root.columnconfigure(0,)
 
 
@@ -134,15 +135,13 @@ modelList.config(font=("Courier", 30))
 #error Frame
 errorFrame = ttk.Frame(mainframe)
 errorFrame.grid(column=1, row= 1)
-errorLabel = ttk.Label(errorFrame, text="Error:")
+errorLabel = ttk.Label(errorFrame, text="Final Fix:")
 errorLabel.grid(column=0, row=0)
 errorLabel.config(font=("Courier", 30))
 
-
-
-errorList=Listbox(errorFrame,height=15, width=30,exportselection=0)
+errorList=Listbox(errorFrame,height=15, width=20,exportselection=0)
 errorList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
-s = ttk.Scrollbar( root, orient=VERTICAL, command=errorList.yview)
+s = ttk.Scrollbar( errorFrame, orient=VERTICAL, command=errorList.yview)
 s.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
 #root.grid_columnconfigure(0, weight=1)
 #root.grid_columnconfigure(1, weight=1)
