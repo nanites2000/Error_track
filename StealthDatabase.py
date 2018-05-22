@@ -6,9 +6,13 @@ from tkinter import ttk
 import string
 
 
-global errors
-global models
 
+global finalFix
+global initial
+global startTime
+global timerRunning
+timerRunning =False
+startTime = time.time()
 
 
 #times = datetime.now().strftime("\'%T:%f\'")
@@ -45,21 +49,34 @@ def getOptions(file):
         result = f.readlines()
 
     return(result)
+def updateTimer():
+    global startTime
+    print("timer")
+    timerString.set(str(round(time.time()-startTime)))
+    root.after(1000,updateTimer)
 
+def initialSelected(*args):
+    global startTime
+    global timerRunning
+    print("Selected Initial")
+    finalTime = time.time() - startTime
+    print(finalTime)
+    startTime = time.time()
+    if not timerRunning:
+        timerRunning = True
+        updateTimer()
 
+def setInitialListbox():
+    global initial
+    initial = getOptions("InitialProblem.txt")
+    initialStrings = StringVar(value=initial)
+    initialList["listvariable"] = initialStrings #this line actually changes the GUI
 
-
-def setModelListbox():
-    global models
-    models = getOptions("InitialProblem.txt")
-    modelStrings = StringVar(value=models)
-    modelList["listvariable"] = modelStrings #this line actually changes the GUI
-
-def setErrorListbox():
-    global errors
-    errors = getOptions("FinalFix.txt")
-    errorStrings = StringVar(value=errors)
-    errorList["listvariable"] = errorStrings
+def setFinalFixListbox():
+    global finalFix
+    finalFix = getOptions("FinalFix.txt")
+    finalFixStrings = StringVar(value=finalFix)
+    finalFixList["listvariable"] = finalFixStrings
 
     #l.bind('<<ListboxSelect>>', profileSelected)
 
@@ -70,12 +87,12 @@ def submit(*args):
     # sql_command = """INSERT INTO employee (staff_number, fname, lname, gender, birth_date)
     #    VALUES (NULL, "William", "Shakespeare", "m", "1961-10-25");"""
     # cursor.execute(sql_command)
-    model= models[modelList.curselection()[0]].strip()
+    initial= initial[initialList.curselection()[0]].strip()
     detail = ''
-    errorCode = errors[errorList.curselection()[0]].strip()
+    finalFixCode = finalFix[finalFixList.curselection()[0]].strip()
     noteString= noteEntry.get()
-    sql_command = "INSERT INTO stealthErrors (dates,times,blenderModel,errorCode,errorDetail,note) VALUES (%s, %s, '%s', '%s', '%s', '%s');" % (
-    dates, times, model,errorCode, detail,noteString)
+    sql_command = "INSERT INTO stealthErrors (dates,times,blenderInitial,finalFix,finalFixDetail,note) VALUES (%s, %s, '%s', '%s', '%s', '%s');" % (
+    dates, times, initial,finalFixCode, detail,noteString)
     cursor.execute(sql_command)
 
     #cursor.execute("SELECT * FROM stealthErrors")
@@ -109,44 +126,44 @@ mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
 mainframe.columnconfigure(0, weight=1)
 mainframe.rowconfigure(0, weight=1)
 
-blenderModel = StringVar()
+blenderInitial = StringVar()
 meters = StringVar()
 noteText = StringVar()
 
-#model frame
-modelFrame = ttk.Frame(mainframe)
-modelFrame.grid(column=0, row= 1)
-modelLabel = ttk.Label(modelFrame, text="Initial Problem:")
-modelLabel.grid(column=0, row=0)
-modelLabel.config(font=("Courier", 30))
+#initial frame
+initialFrame = ttk.Frame(mainframe)
+initialFrame.grid(column=0, row= 1)
+initialLabel = ttk.Label(initialFrame, text="Initial Problem:")
+initialLabel.grid(column=0, row=0)
+initialLabel.config(font=("Courier", 30))
 
-modelList=Listbox(modelFrame,height=21, width=45,exportselection=0)
-modelList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
-scrollModel = ttk.Scrollbar(modelFrame, orient=VERTICAL, command=modelList.yview)
-scrollModel.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
+initialList=Listbox(initialFrame,height=21, width=45,exportselection=0)
+initialList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
+scrollInitial = ttk.Scrollbar(initialFrame, orient=VERTICAL, command=initialList.yview)
+scrollInitial.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
 #root.grid_columnconfigure(0, weight=1)
 #root.grid_columnconfigure(1, weight=1)
-modelList.configure(yscrollcommand=scrollModel.set)
-modelList.config(font=("Courier", 20))
+initialList.configure(yscrollcommand=scrollInitial.set)
+initialList.config(font=("Courier", 20))
 #root.columnconfigure(0,)
 
 
 
-#error Frame
-errorFrame = ttk.Frame(mainframe)
-errorFrame.grid(column=1, row= 1)
-errorLabel = ttk.Label(errorFrame, text="Final Fix:")
-errorLabel.grid(column=0, row=0)
-errorLabel.config(font=("Courier", 30))
+#finalFix Frame
+finalFixFrame = ttk.Frame(mainframe)
+finalFixFrame.grid(column=1, row= 1)
+finalFixLabel = ttk.Label(finalFixFrame, text="Final Fix:")
+finalFixLabel.grid(column=0, row=0)
+finalFixLabel.config(font=("Courier", 30))
 
-errorList=Listbox(errorFrame,height=15, width=20,exportselection=0)
-errorList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
-s = ttk.Scrollbar( errorFrame, orient=VERTICAL, command=errorList.yview)
+finalFixList=Listbox(finalFixFrame,height=15, width=20,exportselection=0)
+finalFixList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
+s = ttk.Scrollbar( finalFixFrame, orient=VERTICAL, command=finalFixList.yview)
 s.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
 #root.grid_columnconfigure(0, weight=1)
 #root.grid_columnconfigure(1, weight=1)
-errorList.configure(yscrollcommand=s.set)
-errorList.config(font=("Courier", 30))
+finalFixList.configure(yscrollcommand=s.set)
+finalFixList.config(font=("Courier", 30))
 #root.columnconfigure(0,)
 
 
@@ -156,6 +173,7 @@ errorList.config(font=("Courier", 30))
 #note frame
 noteFrame = ttk.Frame(root)
 noteFrame.grid(column=0, row= 1, columnspan = 30)
+
 noteLabel = ttk.Label(noteFrame, text="Note:")
 noteLabel.grid(column=0, row=0,sticky =E)
 noteLabel.config(font=("Courier", 22))
@@ -163,13 +181,26 @@ noteEntry = ttk.Entry(noteFrame, width=250, textvariable=noteText)
 noteEntry.grid(column=1, columnspan = 30, row = 0)
 noteEntry.config(font=("Courier", 22))
 
+#set up the button frame
+buttonFrame = ttk.Frame(root)
+buttonFrame.grid(column = 2, row=0, sticky =(W))
+
+
+timerLabel = Label(buttonFrame, text="Timer:")
+timerLabel.grid(row = 0, column = 0,sticky =(W))
+timerLabel.config(font=("Courier", 45))
+
+
+timerString = StringVar()
+timer = Label(buttonFrame,textvariable = timerString)
+timer.grid(row = 1, column = 0)
+timer.config(font=("Courier bold", 75))
+timerString.set("0")
 
 
 
-
-
-submitButton = Button(root, text="Submit", command=submit)
-submitButton.grid(column=1, row=5, sticky=W)
+submitButton = Button(buttonFrame, text="Submit", command=submit)
+submitButton.grid(column=0, row=2, sticky=W)
 submitButton.config(font=("Courier", 30))
 submitButton.config(bg=("light blue"))
 
@@ -177,10 +208,12 @@ submitButton.config(bg=("light blue"))
 
 
 for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
-setModelListbox()
-setErrorListbox()
+setInitialListbox()
+setFinalFixListbox()
 #feet_entry.focus()
 root.bind('<Return>', submit)
+initialList.bind('<<ListboxSelect>>', initialSelected)
+
 
 root.mainloop()
 
