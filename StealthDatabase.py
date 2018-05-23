@@ -4,6 +4,7 @@ from datetime import datetime
 from tkinter import *
 from tkinter import ttk
 import string
+import pyautogui
 
 
 
@@ -32,7 +33,7 @@ cursor = connection.cursor()
 sql_command = """
 CREATE TABLE  IF NOT EXISTS stealthErrors ( 
 RowID INTEGER PRIMARY KEY , 
-Date DATE,
+Date TEXT,
 StartTime TIME,
 Duration REAL,
 InitialProblem TEXT,
@@ -41,10 +42,14 @@ Note TEXT
 );"""
 cursor.execute(sql_command)
 
+def keepAlive():
+    print("keepalive")
+    pyautogui.press('f15')
+    root.after(120000, keepAlive)
+
 #sets up the items in the listboxes
 def getOptions(file):
     filename = "configuration\\" + file
-    print(filename)
     with open (filename) as f:
         result = f.readlines()
 
@@ -63,9 +68,6 @@ def initialSelected(*args):
     global startTime
     global longStartTime
     global timerRunning
-    print("Selected Initial")
-    finalTime = time.time() - startTime
-    print(finalTime)
     startTime = time.time()
     now = datetime.now()
     longStartTime = nowTime = now.hour + now.minute/60 + now.second/3600
@@ -78,7 +80,6 @@ def initialSelected(*args):
     submitButton.config(bg=("light blue"))
 
 def finalFixSelected(*args):
-    print("finalfix")
     try:
         initialValue = initial[initialList.curselection()[0]].strip()
     except:
@@ -127,9 +128,9 @@ def submit(*args):
 
     if initial and finalFixValue:
         noteString= noteEntry.get()
-        print(str( datetime.today().strftime("%Y-%m-%d"))+str(longStartTime)+ str(time.time()-startTime)+ str(initialValue)+str(finalFixValue)+str( noteString))
-        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES (%s, %s, '%s', '%s', '%s', '%s');" % (
-            datetime.today().strftime("%Y-%m-%d"),longStartTime, time.time()-startTime, initialValue,finalFixValue, noteString)
+        print( datetime.today().strftime("%Y-%m-%d")+str(longStartTime)+ str(time.time()-startTime)+ str(initialValue)+str(finalFixValue)+str( noteString))
+        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES ('%s', %s, '%s', '%s', '%s', '%s');" % (
+            datetime.today().strftime("%Y-%m-%d") ,longStartTime, time.time()-startTime, initialValue,finalFixValue, noteString)
         cursor.execute(sql_command)
 
         #cursor.execute("SELECT * FROM stealthErrors")
@@ -262,7 +263,7 @@ setFinalFixListbox()
 root.bind('<Return>', submit)
 initialList.bind('<<ListboxSelect>>', initialSelected)
 finalFixList.bind('<<ListboxSelect>>', finalFixSelected)
-
+keepAlive()
 
 root.mainloop()
 
