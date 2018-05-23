@@ -41,6 +41,7 @@ Note TEXT
 );"""
 cursor.execute(sql_command)
 
+#sets up the items in the listboxes
 def getOptions(file):
     filename = "configuration\\" + file
     print(filename)
@@ -48,29 +49,49 @@ def getOptions(file):
         result = f.readlines()
 
     return(result)
+#this function keeps the timer on the screen up to date and calls itsself every second to update
 def updateTimer():
     global startTime
-    print("timer")
     timerString.set(str(round(time.time()-startTime)))
     root.after(1000,updateTimer)
 
+#this is what happens after the first listbox item is selected
 def initialSelected(*args):
     global startTime
+    global longStartTime
     global timerRunning
     print("Selected Initial")
     finalTime = time.time() - startTime
     print(finalTime)
     startTime = time.time()
+    now = datetime.now()
+    longStartTime = nowTime = now.hour + now.minute/60 + now.second/3600
     if not timerRunning:
         timerRunning = True
         updateTimer()
+    finalFixList.config(state=NORMAL)
+    finalFixList.selection_clear(0, END)
+    submitButton.config(bg=("light blue"))
 
+def finalFixSelected(*args):
+    print("finalfix")
+    try:
+        initialValue = initial[initialList.curselection()[0]].strip()
+    except:
+        initialValue = False
+    if initialValue:
+        submitButton.config(bg=("green"))
+
+
+
+#actually populates first listbox
 def setInitialListbox():
     global initial
     initial = getOptions("InitialProblem.txt")
     initialStrings = StringVar(value=initial)
     initialList["listvariable"] = initialStrings #this line actually changes the GUI
 
+#actually populates second listbox
 def setFinalFixListbox():
     global finalFix
     finalFix = getOptions("FinalFix.txt")
@@ -84,20 +105,27 @@ def submit(*args):
     global initial
     global finalFix
     global startTime
+    global longStartTime
+    global timerRunning
 
     # sql_command = """INSERT INTO employee (staff_number, fname, lname, gender, birth_date)
     #    VALUES (NULL, "William", "Shakespeare", "m", "1961-10-25");"""
     # cursor.execute(sql_command)
-    print(initialList.curselection()[0])
-    initialValue= initial[initialList.curselection()[0]].strip()
 
-    finalFixValue = finalFix[finalFixList.curselection()[0]].strip()
+    try:
+        initialValue= initial[initialList.curselection()[0]].strip()
+    except:
+        initialValue = False
+    try:
+        finalFixValue = finalFix[finalFixList.curselection()[0]].strip()
+    except:
+        finalFixValue = False
 
     if initial and finalFixValue:
         noteString= noteEntry.get()
-        print(str(datetime.date)+ str(time.time()-startTime)+ str(initialValue)+str(finalFixValue)+str( noteString))
-        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES (%s, %s, '%s', '%s', '%s');" % (
-        datetime.today().strftime(), time.time()-startTime, initialValue,finalFixValue, noteString)
+        print(str( datetime.today().strftime("%Y-%m-%d"))+str(longStartTime)+ str(time.time()-startTime)+ str(initialValue)+str(finalFixValue)+str( noteString))
+        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES (%s, %s, '%s', '%s', '%s', '%s');" % (
+            datetime.today().strftime("%Y-%m-%d"),longStartTime, time.time()-startTime, initialValue,finalFixValue, noteString)
         cursor.execute(sql_command)
 
         #cursor.execute("SELECT * FROM stealthErrors")
@@ -114,7 +142,19 @@ def submit(*args):
         # never forget this, if you want the changes to be saved:
         connection.commit()
 
+        #reset everything back to default in the GUI
 
+        initialList.selection_clear(0, END)
+        finalFixList.selection_clear(0, END)
+        finalFixList.config(state=DISABLED)
+        noteEntry.delete(0,END)
+        submitButton.config(bg=("light blue"))
+        timerRunning = 0 #to stop the timer
+
+
+
+    else:
+        submitButton.config(bg=("red"))
 
 
 
@@ -136,7 +176,7 @@ noteText = StringVar()
 #initial frame
 initialFrame = ttk.Frame(mainframe)
 initialFrame.grid(column=0, row= 1)
-initialLabel = ttk.Label(initialFrame, text="Initial Problem:")
+initialLabel = ttk.Label(initialFrame, text="1.Initial Problem:")
 initialLabel.grid(column=0, row=0)
 initialLabel.config(font=("Courier", 30))
 
@@ -155,7 +195,7 @@ initialList.config(font=("Courier", 20))
 #finalFix Frame
 finalFixFrame = ttk.Frame(mainframe)
 finalFixFrame.grid(column=1, row= 1)
-finalFixLabel = ttk.Label(finalFixFrame, text="Final Fix:")
+finalFixLabel = ttk.Label(finalFixFrame, text="2.Final Fix:")
 finalFixLabel.grid(column=0, row=0)
 finalFixLabel.config(font=("Courier", 30))
 
@@ -167,6 +207,7 @@ s.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
 #root.grid_columnconfigure(1, weight=1)
 finalFixList.configure(yscrollcommand=s.set)
 finalFixList.config(font=("Courier", 30))
+finalFixList.config(state=DISABLED)
 #root.columnconfigure(0,)
 
 
@@ -202,7 +243,7 @@ timerString.set("0")
 
 
 
-submitButton = Button(buttonFrame, text="Submit", command=submit)
+submitButton = Button(buttonFrame, text="3.Submit", command=submit)
 submitButton.grid(column=0, row=2, sticky=W)
 submitButton.config(font=("Courier", 30))
 submitButton.config(bg=("light blue"))
@@ -216,6 +257,7 @@ setFinalFixListbox()
 #feet_entry.focus()
 root.bind('<Return>', submit)
 initialList.bind('<<ListboxSelect>>', initialSelected)
+finalFixList.bind('<<ListboxSelect>>', finalFixSelected)
 
 
 root.mainloop()
