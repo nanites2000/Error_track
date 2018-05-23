@@ -53,7 +53,10 @@ def getOptions(file):
 def updateTimer():
     global startTime
     timerString.set(str(round(time.time()-startTime)))
-    root.after(1000,updateTimer)
+    if timerRunning == True:
+        root.after(1000,updateTimer)
+    else:
+        timerString.set("0")
 
 #this is what happens after the first listbox item is selected
 def initialSelected(*args):
@@ -69,6 +72,7 @@ def initialSelected(*args):
     if not timerRunning:
         timerRunning = True
         updateTimer()
+
     finalFixList.config(state=NORMAL)
     finalFixList.selection_clear(0, END)
     submitButton.config(bg=("light blue"))
