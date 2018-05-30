@@ -43,7 +43,6 @@ Note TEXT
 cursor.execute(sql_command)
 
 def keepAlive():
-    print("keepalive")
     pyautogui.press('f15')
     root.after(120000, keepAlive)
 
@@ -129,9 +128,10 @@ def submit(*args):
     if initial and finalFixValue:
         noteString= noteEntry.get()
         print( datetime.today().strftime("%Y-%m-%d")+str(longStartTime)+ str(time.time()-startTime)+ str(initialValue)+str(finalFixValue)+str( noteString))
-        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES ('%s', %s, '%s', '%s', '%s', '%s');" % (
-            datetime.today().strftime("%Y-%m-%d") ,longStartTime, time.time()-startTime, initialValue,finalFixValue, noteString)
-        cursor.execute(sql_command)
+       # sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES ('?')"#, ?, '?', '?', '?', '?');"
+        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES (?, ?, ?, ?, ?,?);"
+        print(sql_command)
+        cursor.execute(sql_command,(datetime.today().strftime("%Y-%m-%d") ,longStartTime, time.time()-startTime, initialValue,finalFixValue, noteString))
 
         #cursor.execute("SELECT * FROM stealthErrors")
         #print("\nfetch one:")
