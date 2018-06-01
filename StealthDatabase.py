@@ -65,6 +65,13 @@ class MyDialog:
         self.mySubmitButton = Button(top, text='Submit', command=self.send)
         self.mySubmitButton.grid(row=4, column=1)
         self.mySubmitButton.config(font=("Courier", 35))
+        self.mySubmitButton.config(bg=("light blue"))
+       
+        self.myQuitButton = Button(top, text='Quit', command=self.quitter)
+        self.myQuitButton.grid(row=4, column=2)
+        self.myQuitButton.config(font=("Courier", 35))
+        self.myQuitButton.config(bg=("red"))
+        
 
         self.operatorLabel=Label(top, text='Select Shift')
         self.operatorLabel.grid(row=1, column=0)
@@ -84,17 +91,26 @@ class MyDialog:
 
         #with open('machines.txt') as f:
          #   machines = f.read().splitlines()
-        self.machines = StringVar(value=["Shift","Previous Shift","Month", "Previous Month"])
+        self.machines = StringVar(value=["Today","Month", "Previous Month"])
         self.machineListbox = Listbox(top, height=4, listvariable=self.machines,exportselection=0)
         self.machineListbox.grid(row=2, column=1)
         self.machineListbox.config(font=("Courier", 15))
         self.machineListbox.selection_set(0)
+        
+        self.orderLabel = Label(top, text='Select Sort Order')
+        self.orderLabel.grid(row=1, column=2)
+        self.orderLabel.config(font=("Courier", 15))
 
         self.order = StringVar(value=["Count", "Total Time"])
         self.orderListbox = Listbox(top, height=2, listvariable=self.order,exportselection=0)
-        self.orderListbox.grid(row=2, column=2)
+        self.orderListbox.grid(row=2, column=2, sticky =(N))
         self.orderListbox.config(font=("Courier", 15))
         self.orderListbox.selection_set(0)
+        
+        self.textbox = Text(top, height=25, width=90)
+        self.textbox.grid(row=5, column=0,columnspan=3)
+        self.textbox.config(font=("Courier", 15))
+        
         
         #self.operatorListbox.bind('<<ListboxSelect>>', listboxSelected)
         #self.machineListbox.bind('<<ListboxSelect>>', listboxSelected)   
@@ -115,13 +131,23 @@ class MyDialog:
         sortby= self.orderListbox.get(self.orderListbox.curselection())
         
         #code to actually send sql query
-        print (shift)
+       
         timecode = ""
-        if timeframe == "Month":
-            print(timeframe)
+        if timeframe == "Today":
+            timecode = "strftime('%d',date) = strftime('%d','now')"
+        elif timeframe == "Month":
             timecode = "strftime('%m',date) = strftime('%m','now')"
         elif timeframe == "Previous Month":
             timecode = "strftime('%m',date) =  strftime('%m','now', '-1 month')"
+            
+        if shift == "First":
+            shiftcode = "StartTime BETWEEN 6 and 14.25"  
+        elif shift == "Second":
+            shiftcode = "StartTime BETWEEN 14.25 and 22.25"
+        else: shiftcode = "6=6"
+        
+        
+        
         
         sortcode = ""    
         if sortby == "Count":
@@ -129,39 +155,40 @@ class MyDialog:
         elif sortby == "Total Time":
             sortcode = "sumDuration"
                    
-        print(timecode)
+        self.textbox.delete(1.0,END)
         #statement = "select InitialProblem, count(InitialProblem), sum(Duration) from stealthErrors GROUP BY InitialProblem HAVING ?"
-        statement = "select InitialProblem, count(InitialProblem) as countProblems, sum(Duration) as sumDuration from stealthErrors WHERE %s GROUP BY InitialProblem ORDER BY %s desc"%(timecode,sortcode)
+        statement = "select InitialProblem, count(InitialProblem) as countProblems, sum(Duration) as sumDuration from stealthErrors WHERE %s AND %s GROUP BY InitialProblem ORDER BY %s desc"%(timecode,shiftcode,sortcode)
         cursor.execute(statement)
         
         result = cursor.fetchall()
+        self.textbox.insert(END,'Failure Name                              Count      Time (minutes)\n')
+        totalCount = 0
+        totalDuration = 0
+        if result:
+            for r in result:
+                print(r)  
+                padding = 40-len(r[0])
+                countString = ('%5s' % r[1])
+                durationString = '%6s' % round(r[2]/60,1)
+                insertString = r[0]+ '-'*padding + '>' +countString + ' ---->' + durationString +'\n'
+                totalCount += r[1]
+                totalDuration += r[2]
+                self.textbox.insert(END,insertString)
+                
+        else:
+            self.textbox.insert(END,"No Data Found\n")
+            
+        totalCountString = '%5s' % totalCount
+        totalDurationString = '%6s' % round(totalDuration/60,1)
+        insertString = "TOTALS" +'-'*34 +'>' + totalCountString + ' ---->' + totalDurationString+ '\n'
+        self.textbox.insert(END, insertString)
        
-        for r in result:
-            print(r)  
-        print (shift)
-        print(timeframe)
-
-       
-        #self.top.destroy()
+    def quitter(self):
+        self.top.destroy()
 
 def onClick():
     inputDialog = MyDialog(root)
     root.wait_window(inputDialog.top)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
