@@ -5,6 +5,10 @@ from tkinter import *
 from tkinter import ttk
 import string
 import pyautogui
+import time
+import numpy as np
+
+
 
 
 
@@ -20,7 +24,7 @@ startTime = time.time()
 #dates= time.strftime("'%F'")
 
 
-connection = sqlite3.connect("company.db")
+connection = sqlite3.connect("stealthError.db")
 
 cursor = connection.cursor()
 
@@ -42,16 +46,142 @@ Note TEXT
 );"""
 cursor.execute(sql_command)
 
+
+
+
+class MyDialog:
+    def __init__(self, parent):
+
+        
+            
+        top = self.top = Toplevel(parent)
+        self.TopLabel = Label(top, text='Enter the information below:')
+        self.TopLabel.grid(row=0,column=1)
+        self.TopLabel.config(font=("Courier", 15))
+        
+        
+
+
+        self.mySubmitButton = Button(top, text='Submit', command=self.send)
+        self.mySubmitButton.grid(row=4, column=1)
+        self.mySubmitButton.config(font=("Courier", 35))
+
+        self.operatorLabel=Label(top, text='Select Shift')
+        self.operatorLabel.grid(row=1, column=0)
+        self.operatorLabel.config(font=("Courier", 15))
+
+        #with open('operators.txt') as f:
+         #   operators = f.read().splitlines()
+        self.operatorName = StringVar(value=["First", "Second","Third","All Shifts"])
+        self.operatorListbox = Listbox(top, height=4, listvariable=self.operatorName,exportselection=0)
+        self.operatorListbox.grid(row=2, column=0)
+        self.operatorListbox.config(font=("Courier", 15))
+        self.operatorListbox.selection_set(0)
+
+        self.machineLabel = Label(top, text='Select Timeframe')
+        self.machineLabel.grid(row=1, column=1)
+        self.machineLabel.config(font=("Courier", 15))
+
+        #with open('machines.txt') as f:
+         #   machines = f.read().splitlines()
+        self.machines = StringVar(value=["Shift","Previous Shift","Month", "Previous Month"])
+        self.machineListbox = Listbox(top, height=4, listvariable=self.machines,exportselection=0)
+        self.machineListbox.grid(row=2, column=1)
+        self.machineListbox.config(font=("Courier", 15))
+        self.machineListbox.selection_set(0)
+
+        self.order = StringVar(value=["Count", "Total Time"])
+        self.orderListbox = Listbox(top, height=2, listvariable=self.order,exportselection=0)
+        self.orderListbox.grid(row=2, column=2)
+        self.orderListbox.config(font=("Courier", 15))
+        self.orderListbox.selection_set(0)
+        
+        #self.operatorListbox.bind('<<ListboxSelect>>', listboxSelected)
+        #self.machineListbox.bind('<<ListboxSelect>>', listboxSelected)   
+        
+       
+
+
+
+    def send(self):
+ 
+        # self.userSelected = self.operatorListbox.get(self.operatorListbox.curselection())
+        # self.machineSelected = self.machineListbox.get(self.machineListbox.curselection())
+        # self.partSelected = self.partListbox.get(self.partListbox.curselection())
+        #shift = self.operatorListbox.get(self.operatorListbox.curselection())
+        #timeframe= self.machineListbox.get(self.machineListbox.curselection())
+        shift = self.operatorListbox.get(self.operatorListbox.curselection())
+        timeframe= self.machineListbox.get(self.machineListbox.curselection())
+        sortby= self.orderListbox.get(self.orderListbox.curselection())
+        
+        #code to actually send sql query
+        print (shift)
+        timecode = ""
+        if timeframe == "Month":
+            print(timeframe)
+            timecode = "strftime('%m',date) = strftime('%m','now')"
+        elif timeframe == "Previous Month":
+            timecode = "strftime('%m',date) =  strftime('%m','now', '-1 month')"
+        
+        sortcode = ""    
+        if sortby == "Count":
+            sortcode = "countProblems"
+        elif sortby == "Total Time":
+            sortcode = "sumDuration"
+                   
+        print(timecode)
+        #statement = "select InitialProblem, count(InitialProblem), sum(Duration) from stealthErrors GROUP BY InitialProblem HAVING ?"
+        statement = "select InitialProblem, count(InitialProblem) as countProblems, sum(Duration) as sumDuration from stealthErrors WHERE %s GROUP BY InitialProblem ORDER BY %s desc"%(timecode,sortcode)
+        cursor.execute(statement)
+        
+        result = cursor.fetchall()
+       
+        for r in result:
+            print(r)  
+        print (shift)
+        print(timeframe)
+
+       
+        #self.top.destroy()
+
+def onClick():
+    inputDialog = MyDialog(root)
+    root.wait_window(inputDialog.top)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def keepAlive():
-    pyautogui.press('f15')
-    root.after(120000, keepAlive)
+    #pyautogui.press('f15')
+    #root.after(120000, keepAlive)
+    pass
 
 #sets up the items in the listboxes
 def getOptions(file):
-    filename = "configuration\\" + file
+    filename = "configuration/" + file
+    print(filename)
     with open (filename) as f:
         result = f.readlines()
-
+        for index,line in enumerate(result):
+            result[index] = line.strip()
     return(result)
 #this function keeps the timer on the screen up to date and calls itsself every second to update
 def updateTimer():
@@ -160,6 +290,10 @@ def submit(*args):
 
     else:
         submitButton.config(bg=("red"))
+        
+
+def shiftReportButtonPressed():
+    onClick()
 
 
 
@@ -169,7 +303,7 @@ root = Tk()
 root.title("Enter Errors")
 root.geometry("1660x1000")
 
-mainframe = ttk.Frame(root, padding="15 15 15 15")
+mainframe = ttk.Frame(root, padding="0 0 0 0")
 mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
 mainframe.columnconfigure(0, weight=1)
 mainframe.rowconfigure(0, weight=1)
@@ -186,7 +320,7 @@ initialLabel.grid(column=0, row=0)
 initialLabel.config(font=("Courier", 30))
 
 initialList=Listbox(initialFrame,height=21, width=45,exportselection=0)
-initialList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
+initialList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E),padx = "0")
 scrollInitial = ttk.Scrollbar(initialFrame, orient=VERTICAL, command=initialList.yview)
 scrollInitial.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
 #root.grid_columnconfigure(0, weight=1)
@@ -205,7 +339,7 @@ finalFixLabel.grid(column=0, row=0)
 finalFixLabel.config(font=("Courier", 30))
 
 finalFixList=Listbox(finalFixFrame,height=15, width=20,exportselection=0)
-finalFixList.grid(row=1, column=0,rowspan=14, sticky=(N,W,E))
+finalFixList.grid(row=1, column=0,rowspan=14, sticky=(N,W))
 s = ttk.Scrollbar( finalFixFrame, orient=VERTICAL, command=finalFixList.yview)
 s.grid(column=1, row=0,sticky = (N,S,W), rowspan = 10)
 #root.grid_columnconfigure(0, weight=1)
@@ -229,6 +363,15 @@ noteLabel.config(font=("Courier", 22))
 noteEntry = ttk.Entry(noteFrame, width=250, textvariable=noteText)
 noteEntry.grid(column=1, columnspan = 30, row = 0)
 noteEntry.config(font=("Courier", 22))
+
+#report buttons
+reportFrame = ttk.Frame(root)
+reportFrame.grid(column=0, row= 2)
+
+shiftReportButton = Button(reportFrame, text="Report", command=shiftReportButtonPressed)
+shiftReportButton.grid(column=0, row=1)
+shiftReportButton.config(font=("Courier", 30))
+shiftReportButton.config(bg=("light blue"))
 
 #set up the button frame
 buttonFrame = ttk.Frame(root)
