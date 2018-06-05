@@ -166,7 +166,6 @@ class MyDialog:
         totalDuration = 0
         if result:
             for r in result:
-                print(r)  
                 padding = 40-len(r[0])
                 countString = ('%5s' % r[1])
                 durationString = '%6s' % round(r[2]/60,1)
@@ -182,6 +181,14 @@ class MyDialog:
         totalDurationString = '%6s' % round(totalDuration/60,1)
         insertString = "TOTALS" +'-'*34 +'>' + totalCountString + ' ---->' + totalDurationString+ '\n'
         self.textbox.insert(END, insertString)
+        try:
+            with open("/media/pi/DATA/data.txt", 'w') as F:
+                textToWrite = self.textbox.get("1.0",END)
+                F.write(textToWrite)
+        except:
+            print("usb write failure")
+        
+
        
     def quitter(self):
         self.top.destroy()
@@ -284,10 +291,10 @@ def submit(*args):
 
     if initial and finalFixValue:
         noteString= noteEntry.get()
-        print( datetime.today().strftime("%Y-%m-%d")+str(longStartTime)+ str(time.time()-startTime)+ str(initialValue)+str(finalFixValue)+str( noteString))
+      
        # sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES ('?')"#, ?, '?', '?', '?', '?');"
         sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES (?, ?, ?, ?, ?,?);"
-        print(sql_command)
+       
         cursor.execute(sql_command,(datetime.today().strftime("%Y-%m-%d") ,longStartTime, time.time()-startTime, initialValue,finalFixValue, noteString))
 
         #cursor.execute("SELECT * FROM stealthErrors")
@@ -295,11 +302,6 @@ def submit(*args):
         #res = cursor.fetchone()
        # print(res)
 
-        cursor.execute("SELECT * FROM stealthErrors")
-        print("fetchall:")
-        result = cursor.fetchall()
-        for r in result:
-            print(r)
 
         # never forget this, if you want the changes to be saved:
         connection.commit()
