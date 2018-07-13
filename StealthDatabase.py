@@ -1,3 +1,4 @@
+
 import sqlite3
 import time
 from datetime import datetime
@@ -20,8 +21,6 @@ timerRunning =False
 startTime = time.time()
 
 
-#times = datetime.now().strftime("\'%T:%f\'")
-#dates= time.strftime("'%F'")
 
 
 connection = sqlite3.connect("stealthError.db")
@@ -37,8 +36,7 @@ cursor = connection.cursor()
 sql_command = """
 CREATE TABLE  IF NOT EXISTS stealthErrors ( 
 RowID INTEGER PRIMARY KEY , 
-Date TEXT,
-StartTime TIME,
+datetime TEXT,
 Duration REAL,
 InitialProblem TEXT,
 FinalFix TEXT, 
@@ -134,16 +132,16 @@ class MyDialog:
        
         timecode = ""
         if timeframe == "Today":
-            timecode = "strftime('%d',date) = strftime('%d','now')"
+            timecode = "strftime('%d',date(datetime)) = strftime('%d','now')"
         elif timeframe == "Month":
-            timecode = "strftime('%m',date) = strftime('%m','now')"
+            timecode = "strftime('%m',date(datetime)) = strftime('%m','now')"
         elif timeframe == "Previous Month":
-            timecode = "strftime('%m',date) =  strftime('%m','now', '-1 month')"
+            timecode = "strftime('%m',date(datetime)) =  strftime('%m','now', '-1 month')"
             
         if shift == "First":
-            shiftcode = "StartTime BETWEEN 6 and 14.25"  
+            shiftcode = "time(datetime) BETWEEN '06:00:00' and '14:15:00'"  
         elif shift == "Second":
-            shiftcode = "StartTime BETWEEN 14.25 and 22.25"
+            shiftcode = "time(datetime) BETWEEN '14:15:00' and '22:15:00'"
         else: shiftcode = "6=6"
         
         
@@ -291,11 +289,11 @@ def submit(*args):
 
     if initial and finalFixValue:
         noteString= noteEntry.get()
-      
-       # sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES ('?')"#, ?, '?', '?', '?', '?');"
-        sql_command = "INSERT INTO stealthErrors (date,StartTime, duration,InitialProblem,finalFix, note) VALUES (?, ?, ?, ?, ?,?);"
+        now = datetime.now()
+        timestring = now.strftime('%Y-%m-%d %X.%f')
+        sql_command = "INSERT INTO stealthErrors (datetime, duration,InitialProblem,finalFix, note) VALUES (?, ?, ?, ?,?);"
        
-        cursor.execute(sql_command,(datetime.today().strftime("%Y-%m-%d") ,longStartTime, time.time()-startTime, initialValue,finalFixValue, noteString))
+        cursor.execute(sql_command,(timestring, time.time()-startTime, initialValue,finalFixValue, noteString))
 
         #cursor.execute("SELECT * FROM stealthErrors")
         #print("\nfetch one:")
