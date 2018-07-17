@@ -1,0 +1,18 @@
+Motor\Sounds Bad
+Electronic\LED
+Electronic\Screen
+Electronic\Touch Pad
+Electronic\Will Not Program
+Electronic\No Power(No lights at all)
+Electronic\Other (Explain in Note)
+Cosmetic\Scratch
+Cosmetic\Loctite Mark
+Cosmetic\Sling Ring
+Cosmetic\Casting
+Cosmetic\Other (Explain in Note)
+Testing\Overload
+Testing\Motor Mismatch
+Testing\High Pot
+Testing\Reset Error
+Testing\Motor Error
+Testing\Other (Explain in Note)
