@@ -1,7 +1,0 @@
-Motor
-Electronic
-Speed Sensor
-Touch Pad
-Power Cord
-Cosmetic
-Other
