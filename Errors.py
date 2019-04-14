@@ -8,6 +8,7 @@ import string
 #import pyautogui
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 
 global finalFix
 global initial
@@ -21,10 +22,10 @@ connection = sqlite3.connect("Errors.db")
 
 cursor = connection.cursor()
 
-# delete
+# delete tables- use carefully as it will delete all data in a given table as well
 # cursor.execute("""DROP TABLE stealthErrors;""")
 #cursor.execute("""DROP TABLE Parts;""")
-
+#cursor.execute("""DROP TABLE Errors;""")
 
 
 # this creates the table if it doesn't already exist.
@@ -32,9 +33,14 @@ sql_command = """
 CREATE TABLE  IF NOT EXISTS Errors ( 
 RowID INTEGER PRIMARY KEY , 
 datetime TEXT,
-Duration REAL,
-InitialProblem TEXT,
-FinalFix TEXT, 
+workOrder TEXT,
+partNumber TEXT,
+quantity INT,
+assembly TEXT,
+errorType TEXT,
+errorCode TEXT,
+errorSub TEXT,
+disposition TEXT, 
 Note TEXT
 );"""
 cursor.execute(sql_command)
@@ -90,17 +96,6 @@ class MyDialog:
         self.myQuitButton.config(font=("Courier", 35))
         self.myQuitButton.config(bg=("red"))
 
-        self.operatorLabel = Label(top, text='Select Shift')
-        self.operatorLabel.grid(row=1, column=0)
-        self.operatorLabel.config(font=("Courier", 15))
-
-        # with open('operators.txt') as f:
-        #   operators = f.read().splitlines()
-        self.operatorName = StringVar(value=["First", "Second", "Third", "All Shifts"])
-        self.operatorListbox = Listbox(top, height=4, listvariable=self.operatorName, exportselection=0)
-        self.operatorListbox.grid(row=2, column=0)
-        self.operatorListbox.config(font=("Courier", 15))
-        self.operatorListbox.selection_set(0)
 
         self.machineLabel = Label(top, text='Select Timeframe')
         self.machineLabel.grid(row=1, column=1)
@@ -118,13 +113,13 @@ class MyDialog:
         self.orderLabel.grid(row=1, column=2)
         self.orderLabel.config(font=("Courier", 15))
 
-        self.order = StringVar(value=["Count", "Total Time"])
+        self.order = StringVar(value=["All Data", "Assembly Counts"])
         self.orderListbox = Listbox(top, height=2, listvariable=self.order, exportselection=0)
         self.orderListbox.grid(row=2, column=2, sticky=(N))
         self.orderListbox.config(font=("Courier", 15))
         self.orderListbox.selection_set(0)
 
-        self.textbox = Text(top, height=25, width=90)
+        self.textbox = Text(top, height=25, width=150)
         self.textbox.grid(row=5, column=0, columnspan=3)
         self.textbox.config(font=("Courier", 15))
 
@@ -139,7 +134,7 @@ class MyDialog:
         # self.partSelected = self.partListbox.get(self.partListbox.curselection())
         # shift = self.operatorListbox.get(self.operatorListbox.curselection())
         # timeframe= self.machineListbox.get(self.machineListbox.curselection())
-        shift = self.operatorListbox.get(self.operatorListbox.curselection())
+
         timeframe = self.machineListbox.get(self.machineListbox.curselection())
         sortby = self.orderListbox.get(self.orderListbox.curselection())
 
@@ -154,12 +149,6 @@ class MyDialog:
            timecode=" datetime >= dateadd(month, datediff(month, 1, GETDATE()), 0) AND datetime < dateadd(month, datediff(month, 0, GETDATE()), 0)"
            # timecode = "strftime('%m',date(datetime)) =  strftime('%m','now', '-1 month')"
 
-        if shift == "First":
-            shiftcode = "CONVERT(time,datetime) BETWEEN '06:00:00' and '14:15:00 '"
-        elif shift == "Second":
-            shiftcode = "CONVERT(time,datetime) BETWEEN '14:15:00' and '22:15:00'"
-        else:
-            shiftcode = "6=6"
 
         sortcode = ""
         if sortby == "Count":
@@ -168,29 +157,45 @@ class MyDialog:
             sortcode = "sumDuration"
 
         self.textbox.delete(1.0, END)
-        # statement = "select InitialProblem, count(InitialProblem), sum(Duration) from stealthErrors GROUP BY InitialProblem HAVING ?"
+        #statement = "select InitialProblem, count(InitialProblem), sum(Duration) from stealthErrors GROUP BY InitialProblem HAVING ?"
         #statement = "select InitialProblem, count(InitialProblem) as countProblems, sum(Duration) as sumDuration from [PRODUCTION_REC].[dbo].[testing4StealthErrors] WHERE %s AND %s GROUP BY InitialProblem ORDER BY %s desc" % (
 
-        #statement = "select InitialProblem, count(InitialProblem) as countProblems, sum(Duration) as sumDuration from stealthErrors WHERE %s AND %s GROUP BY InitialProblem ORDER BY %s desc" % (
-       # timecode, shiftcode, sortcode)
+        #statement = "select InitialProblem, count(InitialProblem) as countProblems, sum(Duration) as sumDuration from stealthErrors WHERE %s AND %s GROUP BY InitialProblem ORDER BY %s desc" %(timecode, shiftcode, sortcode)
         #cursor.execute(statement)
+
+        if sortby =="All Data":
+            statement = "select * from Errors ORDER BY assembly"#%(timecode)
+            cursor.execute(statement)
+
+        #statement = "select date(datetime) from Errors LEFT JOIN Parts on Parts.partName =Errors.partNumber ORDER BY assembly"  # %(timecode)
+        #cursor.execute(statement)
+
+        if sortby == "Assembly Counts":
+            statement = "select assembly, sum(quantity) as total from Errors group by Assembly ORDER BY total DESC"#%(timecode)
+            cursor.execute(statement)
+
+
 
         result = cursor.fetchall()
         self.textbox.insert(END, 'Failure Name                              Count      Time (minutes)\n')
         totalCount = 0
         totalDuration = 0
+        dataArray =[]
         if result:
             for r in result:
-                padding = 40 - len(r[0])
-                countString = ('%5s' % r[1])
-                durationString = '%6s' % round(r[2] / 60, 1)
-                insertString = r[0] + '-' * padding + '>' + countString + ' ---->' + durationString + '\n'
-                totalCount += r[1]
-                totalDuration += r[2]
+                #padding = 40 - len(r[0])
+                #countString = ('%5s' % r[1])
+                #durationString = '%6s' % round(r[2] / 60, 1)
+                #insertString = r[0] + '-' * padding + '>' + countString + ' ---->' + durationString + '\n'
+                #totalCount += r[1]
+                #totalDuration += r[2]
+                insertString = str(r) + '\n'
                 self.textbox.insert(END, insertString)
+                #dataArray.append(r)
 
         else:
             self.textbox.insert(END, "No Data Found\n")
+
 
         totalCountString = '%5s' % totalCount
         totalDurationString = '%6s' % round(totalDuration / 60, 1)
@@ -370,11 +375,13 @@ def setAssemblyListbox():
 
 
 # this will actually submit the changes to  the sql database
-def submit(*args):
+def partEntered(*args):
 
     part = partEntry.get()
     print(part)
-
+    part = part.upper()
+    partEntry.delete(0,'end')
+    partEntry.insert(0,part)
     partNameText.set(part)
     funcCatText.set(part)
     # global initial
@@ -397,46 +404,55 @@ def submit(*args):
 
     setAssemblyListbox()
 
+#this is run when the submit button is pushed
+def submit(*args):
+    #sql_command = """
+    #CREATE TABLE  IF NOT EXISTS Errors (
+    #RowID INTEGER PRIMARY KEY ,
+    #datetime TEXT,
+    #workOrder TEXT,
+    #partNumber TEXT,
+    #quantity INT
+    #assembly TEXT,
+    #errorType TEXT,
+    #errorCode TEXT,
+    #errorSub TEXT,
+    #disposition TEXT,
+    #Note TEXT
 
-    # try:
-    #     initialValue = initial[initialList.curselection()[0]].strip()
-    # except:
-    #     initialValue = False
-    # try:
-    #     finalFixValue = finalFix[finalFixList.curselection()[0]].strip()
-    # except:
-    #     finalFixValue = False
-    #
-    # if initial and finalFixValue:
-    #     noteString = noteEntry.get()
-    #     now = datetime.now()
-    #     timestring = now.strftime('%Y-%m-%d %X.%f')
-    #     sql_command = "INSERT INTO [PRODUCTION_REC].[dbo].[testing4StealthErrors] (datetime, duration,InitialProblem,finalFix, note) VALUES (?, ?, ?, ?,?);"
-    #
-    #     cursor.execute(sql_command, (timestring, time.time() - startTime, initialValue, finalFixValue, noteString))
-    #
-    #     # cursor.execute("SELECT * FROM stealthErrors")
-    #     # print("\nfetch one:")
-    #     # res = cursor.fetchone()
-    #     # print(res)
-    #
-    #
-    #     # never forget this, if you want the changes to be saved:
-    #     connection.commit()
-    #
-    #     # reset everything back to default in the GUI
-    #
-    #     initialList.selection_clear(0, END)
-    #     finalFixList.selection_clear(0, END)
-    #     finalFixList.config(state=DISABLED)
-    #     noteEntry.delete(0, END)
-    #     submitButton.config(bg=("light blue"))
-    #     timerRunning = 0  # to stop the timer
-    #
-    #
-    #
-    # else:
-    #     submitButton.config(bg=("red"))
+    now = datetime.now()
+    timestring = now.strftime('%Y-%m-%d %X.%f')
+    workOrder = ""
+    partNumber= partEntry.get()
+    quantity = int(quantityEntry.get())
+    assembly = assemblyList.get(assemblyList.curselection()[0])
+    errorType = errorTypeList.get(errorTypeList.curselection()[0])#Error type errors
+    errorCode = errorCodeList.get(errorCodeList.curselection()[0])
+    errorSub = ""
+    disposition = dispositionList.get(dispositionList.curselection()[0])
+    note = noteEntry.get()
+
+
+
+
+    sql_command = "INSERT INTO Errors (datetime, workOrder, partNumber, quantity, assembly, errorType, errorCode, errorSub,disposition, note) VALUES (?, ?, ?, ?,?,?,?,?,?,?);"
+    cursor.execute(sql_command, (timestring, workOrder, partNumber, quantity, assembly, errorType, errorCode, errorSub, disposition, note))
+         # cursor.execute("SELECT * FROM stealthErrors")
+    # print("\nfetch one:")
+    # res = cursor.fetchone()
+    # print(res)
+
+    # never forget this, if you want the changes to be saved:
+    connection.commit()
+         # reset everything back to default in the GUI
+    #initialList.selection_clear(0, END)
+    #finalFixList.selection_clear(0, END)
+    #finalFixList.config(state=DISABLED)
+    #noteEntry.delete(0, END)
+    #submitButton.config(bg=("light blue"))
+    timerRunning = 0  # to stop the timer
+
+
 
 
 def shiftReportButtonPressed():
@@ -507,14 +523,14 @@ assemblyLabel.grid(column=2, row=0)
 assemblyLabel.config(font=("Courier", 20))
 
 
-partNameLabel = ttk.Label(topFrame, text="Error Type:  ")
-partNameLabel.grid(column=0, row=2)
-partNameLabel.config(font=("Courier", 20))
+errorTypeLabel = ttk.Label(topFrame, text="Error Type:  ")
+errorTypeLabel.grid(column=0, row=2)
+errorTypeLabel.config(font=("Courier"))
 
 errorType = ["Incoming", "Inspection", "RMA"]
 errorTypeList = Listbox(topFrame, height=4, width=20, exportselection=0)
 errorTypeList.grid(row=3, column=0, rowspan=14, sticky=(N, W, E), padx="0")
-errorTypeList.config(font=("Courier"))
+errorTypeList.config(font=("Courier",20))
 errorTypeStrings = StringVar(value=errorType)
 errorTypeList["listvariable"] = errorTypeStrings
 
@@ -527,7 +543,7 @@ errorFrame.grid(column=0, row=1)
 
 errorCodeLabel = ttk.Label(errorFrame, text="Error Code:")
 errorCodeLabel.grid(column=0, row=0)
-errorCodeLabel.config(font=("Courier", 30))
+errorCodeLabel.config(font=("Courier", 20))
 
 errorCodeList = Listbox(errorFrame, height=25, width=45, exportselection=0)
 errorCodeList.grid(row=1, column=0, rowspan=14, sticky=(N, W))
@@ -537,6 +553,22 @@ s.grid(column=1, row=0, sticky=(N, S, W), rowspan=10)
 # root.grid_columnconfigure(1, weight=1)
 errorCodeList.configure(yscrollcommand=s.set)
 errorCodeList.config(font=("Courier"))
+
+
+dispositionLabel = ttk.Label(errorFrame, text="Disposition:")
+dispositionLabel.grid(column=1, row=0)
+dispositionLabel.config(font=("Courier", 20))
+
+disposition = ["Scrap", "Rework", "Unknown", "Other"]
+dispositionList = Listbox(errorFrame, height=5, width=10, exportselection=0)
+dispositionList.grid(row=1, column=1, rowspan=14, sticky=(N, W))
+# root.grid_columnconfigure(0, weight=1)
+# root.grid_columnconfigure(1, weight=1)
+dispositionList.config(font=("Courier",20))
+dispositionStrings = StringVar(value=disposition)
+dispositionList["listvariable"] = dispositionStrings
+
+
 
 # root.columnconfigure(0,)
 
@@ -587,7 +619,7 @@ for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
 #setInitialListbox()
 #setFinalFixListbox()
 # feet_entry.focus()
-root.bind('<Return>', submit)
+root.bind('<Return>', partEntered)
 errorTypeList.bind('<<ListboxSelect>>', errorTypeSelected)
 #initialList.bind('<<ListboxSelect>>', initialSelected)
 #finalFixList.bind('<<ListboxSelect>>', finalFixSelected)
