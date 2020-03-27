@@ -17,7 +17,7 @@ global timerRunning
 timerRunning = False
 startTime = time.time()
 
-#connection = pyodbc.connect("DRIVER={SQL Server}; server=DAXSQL01; uid = EngSQLSvc; pwd = cpUAk(20uTzW)")
+
 connection = sqlite3.connect("Errors.db")
 
 cursor = connection.cursor()
